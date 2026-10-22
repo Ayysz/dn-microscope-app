@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microscope Digital Vision Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mikroskop Multimedia - Digital Vision</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -14,321 +18,518 @@
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        darkBg: '#0F172A',
-                        darkSurface: 'rgba(30, 41, 59, 0.75)',
-                        accentPrimary: '#06B6D4',
-                        accentHover: '#0891B2',
+                        brand: {
+                            500: '#0284c7',
+                            600: '#0369a1',
+                        },
+                        surface: {
+                            base: '#0B0F17',
+                            card: 'rgba(15, 23, 42, 0.75)',
+                            panel: 'rgba(23, 32, 51, 0.65)',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                        }
                     }
                 }
             }
         }
     </script>
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #0B0F17;
+            color: #f1f5f9;
             user-select: none;
             overflow: hidden;
-            background-color: #0B0F19;
-            color: #F8FAFC;
+            touch-action: none; /* Prevent accidental swipe navigation on mobile */
         }
+
+        /* Refined Minimal Glassmorphism */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(13, 19, 31, 0.78);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
         }
-        .glass-button {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s ease;
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .glass-button:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(6, 182, 212, 0.5);
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.18);
         }
-        .glass-button.active {
-            background: rgba(6, 182, 212, 0.25);
-            border-color: #06B6D4;
-            color: #38BDF8;
+
+        .glass-btn.active {
+            background: rgba(2, 132, 199, 0.25);
+            border-color: rgba(56, 189, 248, 0.65);
+            color: #38bdf8;
         }
-        /* Custom scrollbar for gallery and modal */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+
+        /* Tooltip style for desktop */
+        @media (min-width: 768px) {
+            .tooltip {
+                visibility: hidden;
+                opacity: 0;
+                transition: opacity 0.2s, visibility 0.2s;
+            }
+            .has-tooltip:hover .tooltip {
+                visibility: visible;
+                opacity: 1;
+            }
         }
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(51, 65, 85, 0.8);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(71, 85, 105, 1);
-        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col justify-between relative select-none">
+<body class="h-screen w-screen relative flex flex-col justify-between select-none overflow-hidden">
 
-    <!-- TOP HEADER OVERLAY -->
-    <header class="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center pointer-events-none">
-        <div class="flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl pointer-events-auto">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                <i class="fa-solid font-bold fa-microscope text-lg"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-sm tracking-wide text-slate-100 leading-tight">DN Vision Pro</h1>
-                <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Microscope Suite v2.0</p>
-            </div>
+    <!-- 1. FULL VIEWPORT CANVAS AREA -->
+    <main class="absolute inset-0 z-0 bg-black flex items-center justify-center overflow-hidden">
+        <!-- Live Video Element -->
+        <video id="videoFeed" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
+
+        <!-- Simulated Microscopic Background -->
+        <div id="simulatedBg" class="absolute inset-0 bg-cover bg-center transition-opacity duration-700 opacity-90"
+             style="background-image: url('https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=1920&auto=format&fit=crop');">
+            <div class="absolute inset-0" style="background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0); background-size: 20px 20px;"></div>
         </div>
 
-        <!-- CAMERA SELECTOR & STATUS -->
-        <div class="flex items-center gap-3 pointer-events-auto">
-            <div class="glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-2">
-                <span class="relative flex h-2.5 w-2.5">
-                  <span id="statusPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span id="statusDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <select id="cameraSelect" class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer pr-2">
-                    <option value="" class="bg-slate-900 text-slate-300" id="optDetecting">Detecting cameras...</option>
-                </select>
-                <button id="btnRefreshCam" title="Refresh Camera List" class="text-slate-400 hover:text-cyan-400 text-xs px-1">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
+        <!-- Touch & Mouse Responsive CustomPainter Overlay -->
+        <canvas id="overlayCanvas" class="absolute inset-0 z-10 cursor-crosshair touch-none"></canvas>
+
+        <!-- CAMERA DISCONNECTED NOTICE -->
+        <div id="noCamNotice" class="absolute z-20 glass-panel p-5 md:p-6 rounded-2xl max-w-xs md:max-w-sm w-[90%] text-center hidden border border-slate-800">
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-800/80 text-amber-400 flex items-center justify-center mx-auto mb-3 text-lg md:text-xl border border-slate-700/50">
+                <i class="ph ph-video-camera-slash"></i>
             </div>
-
-            <!-- LANGUAGE TOGGLE -->
-            <button id="btnLang" class="glass-panel px-3 py-1.5 rounded-2xl text-xs text-slate-200 font-semibold hover:text-cyan-400 transition-colors">
-                <i class="fa-solid fa-globe mr-1"></i> <span id="currentLang">ID</span>
-            </button>
-
-            <!-- FULLSCREEN TOGGLE -->
-            <button id="btnFullscreen" class="glass-panel p-2 rounded-2xl text-slate-300 hover:text-white transition-colors w-9 h-9 flex items-center justify-center">
-                <i class="fa-solid fa-expand text-sm"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- MAIN CANVAS VIEWPORT (LIVE FEED + MEASUREMENT OVERLAY) -->
-    <main class="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
-        <!-- Live Video Element (Hidden or mirrored to Canvas) -->
-        <video id="videoFeed" class="hidden" autoplay playsinline></video>
-
-        <!-- Simulated Sample Grid/Background Pattern if camera disconnected -->
-        <div id="simulatedBg" class="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-90" style="background-image: url('https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=1920&auto=format&fit=crop');"></div>
-
-        <!-- Drawing Canvas -->
-        <canvas id="overlayCanvas" class="absolute inset-0 z-10 cursor-crosshair"></canvas>
-
-        <!-- NO CAMERA DETECTED / DEMO BANNER -->
-        <div id="noCamNotice" class="absolute z-10 glass-panel p-6 rounded-3xl max-w-sm text-center border border-slate-700/50 hidden">
-            <div class="w-12 h-12 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center mx-auto mb-3 text-xl">
-                <i class="fa-solid fa-video-slash"></i>
-            </div>
-            <h3 class="font-semibold text-slate-100 mb-1" id="lblNoCamTitle">Kamera Tidak Ditemukan</h3>
-            <p class="text-xs text-slate-400 mb-4" id="lblNoCamDesc">Hubungkan kamera mikroskop USB atau pilih simulasi sampel untuk pengujian.</p>
-            <button id="btnUseDemo" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-cyan-600/30 transition-all">
-                Gunakan Mode Simulasi
+            <h3 class="font-semibold text-slate-100 text-xs md:text-sm mb-1" id="i18n-noCamTitle">Kamera Tidak Terdeteksi</h3>
+            <p class="text-[11px] md:text-xs text-slate-400 mb-4 leading-relaxed" id="i18n-noCamDesc">Hubungkan perangkat mikroskop USB OTG / UVC Anda, atau aktifkan mode simulasi.</p>
+            <button id="btnUseDemo" class="w-full py-2 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-medium transition-all shadow-lg shadow-sky-950/50">
+                <span id="i18n-btnDemo">Gunakan Mode Simulasi</span>
             </button>
         </div>
     </main>
 
-    <!-- LEFT SIDEBAR: FLOATING MEASUREMENT TOOLS -->
-    <aside class="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 glass-panel p-2 rounded-2xl">
-        <button data-tool="select" title="Pilih / Move" class="tool-btn glass-button p-3 rounded-xl text-slate-300 hover:text-cyan-400 active">
-            <i class="fa-solid fa-arrow-pointer text-base"></i>
+    <!-- 2. TOP BAR (HEADER) - ADAPTIVE DESKTOP & MOBILE -->
+    <header class="relative z-30 p-2.5 md:p-4 flex justify-between items-center pointer-events-none">
+        <!-- Brand / App Info (Compact on mobile, full on tablet/desktop) -->
+        <div class="flex items-center gap-2 md:gap-3 glass-panel px-3 py-1.5 md:px-3.5 md:py-2 rounded-xl md:rounded-2xl pointer-events-auto">
+            <div class="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                <i class="ph-bold ph-microscope text-sm md:text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-semibold text-[11px] md:text-xs text-slate-100 tracking-tight leading-tight">
+                    <span class="hidden sm:inline">Mikroskop Multimedia</span>
+                    <span class="sm:hidden">MM Vision</span>
+                </h1>
+                <p class="text-[9px] md:text-[10px] text-slate-400 font-mono hidden sm:block">v2.4 • Digital Vision</p>
+            </div>
+        </div>
+
+        <!-- Camera Status & Header Controls -->
+        <div class="flex items-center gap-1.5 md:gap-2 pointer-events-auto">
+            <!-- Camera Status Indicator Badge -->
+            <div class="glass-panel px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-2xl flex items-center gap-2 text-xs">
+                <span class="relative flex h-2 w-2">
+                    <span id="statusPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span id="statusDot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <!-- Camera Select (Hidden on very small screens, viewable in settings) -->
+                <select id="cameraSelect" class="bg-transparent text-slate-200 font-medium text-xs focus:outline-none cursor-pointer max-w-[100px] md:max-w-[150px] truncate hidden sm:block">
+                    <option value="" class="bg-slate-900 text-slate-300" id="i18n-optDetecting">Mendeteksi...</option>
+                </select>
+                <button id="btnRefreshCam" class="text-slate-400 hover:text-sky-400 transition-colors p-0.5" title="Refresh Kamera">
+                    <i class="ph ph-arrows-clockwise text-xs md:text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Language Switcher -->
+            <button id="btnLang" class="glass-panel px-2.5 py-1.5 md:px-3 rounded-xl md:rounded-2xl text-[11px] md:text-xs font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-1">
+                <i class="ph ph-globe text-xs md:text-sm text-slate-400"></i>
+                <span id="currentLang">ID</span>
+            </button>
+
+            <!-- Fullscreen Toggle (Hidden on mobile browsers where native fullscreen is constrained) -->
+            <button id="btnFullscreen" class="glass-panel p-1.5 md:p-2 rounded-xl md:rounded-2xl text-slate-300 hover:text-white transition-colors flex items-center justify-center w-7 h-7 md:w-8 md:h-8">
+                <i class="ph ph-arrows-out text-xs md:text-base"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 3. ADAPTIVE TOOLBOX / SIDEBAR -->
+    <!-- DESKTOP / TABLET SIDEBAR (Melayang di kiri) -->
+    <aside class="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 flex-col gap-1.5 glass-panel p-1.5 rounded-2xl transition-all duration-300" id="sidebarContainer">
+        <button id="btnToggleSidebar" class="p-2 text-slate-400 hover:text-slate-100 flex items-center justify-center rounded-xl hover:bg-slate-800/50 transition-colors">
+            <i class="ph ph-caret-left text-sm transition-transform duration-300" id="sidebarCaret"></i>
         </button>
-        <div class="w-8 h-[1px] bg-slate-700/50 my-0.5 mx-auto"></div>
-        <button data-tool="distance" title="Ukur Jarak" class="tool-btn glass-button p-3 rounded-xl text-slate-300 hover:text-cyan-400">
-            <i class="fa-solid fa-ruler text-base"></i>
-        </button>
-        <button data-tool="angle" title="Ukur Sudut" class="tool-btn glass-button p-3 rounded-xl text-slate-300 hover:text-cyan-400">
-            <i class="fa-solid fa-compass text-base"></i>
-        </button>
-        <button data-tool="rect" title="Luas Persegi" class="tool-btn glass-button p-3 rounded-xl text-slate-300 hover:text-cyan-400">
-            <i class="fa-regular fa-square text-base"></i>
-        </button>
-        <button data-tool="circle" title="Ukur Lingkaran" class="tool-btn glass-button p-3 rounded-xl text-slate-300 hover:text-cyan-400">
-            <i class="fa-regular fa-circle text-base"></i>
-        </button>
-        <div class="w-8 h-[1px] bg-slate-700/50 my-0.5 mx-auto"></div>
-        <button id="btnClearCanvas" title="Bersihkan Overlay" class="glass-button p-3 rounded-xl text-rose-400 hover:bg-rose-500/20">
-            <i class="fa-solid fa-trash-can text-base"></i>
-        </button>
+
+        <div class="w-full h-[1px] bg-slate-800/80 my-0.5"></div>
+
+        <div class="flex flex-col gap-1.5" id="toolButtonsGroup">
+            <div class="relative flex items-center has-tooltip">
+                <button data-tool="select" class="tool-btn glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 active">
+                    <i class="ph ph-cursor-text text-base"></i>
+                </button>
+                <span class="tooltip absolute left-12 whitespace-nowrap bg-slate-900 text-slate-200 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 shadow-xl" id="i18n-toolSelect">Pointer / Move</span>
+            </div>
+
+            <div class="relative flex items-center has-tooltip">
+                <button data-tool="distance" class="tool-btn glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-slate-300">
+                    <i class="ph ph-ruler text-base"></i>
+                </button>
+                <span class="tooltip absolute left-12 whitespace-nowrap bg-slate-900 text-slate-200 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 shadow-xl" id="i18n-toolDistance">Ukur Jarak</span>
+            </div>
+
+            <div class="relative flex items-center has-tooltip">
+                <button data-tool="angle" class="tool-btn glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-slate-300">
+                    <i class="ph ph-compass text-base"></i>
+                </button>
+                <span class="tooltip absolute left-12 whitespace-nowrap bg-slate-900 text-slate-200 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 shadow-xl" id="i18n-toolAngle">Ukur Sudut</span>
+            </div>
+
+            <div class="relative flex items-center has-tooltip">
+                <button data-tool="rect" class="tool-btn glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-slate-300">
+                    <i class="ph ph-bounding-box text-base"></i>
+                </button>
+                <span class="tooltip absolute left-12 whitespace-nowrap bg-slate-900 text-slate-200 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 shadow-xl" id="i18n-toolRect">Luas Persegi</span>
+            </div>
+
+            <div class="relative flex items-center has-tooltip">
+                <button data-tool="circle" class="tool-btn glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-slate-300">
+                    <i class="ph ph-circle text-base"></i>
+                </button>
+                <span class="tooltip absolute left-12 whitespace-nowrap bg-slate-900 text-slate-200 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 shadow-xl" id="i18n-toolCircle">Ukur Lingkaran</span>
+            </div>
+
+            <div class="w-full h-[1px] bg-slate-800/80 my-0.5"></div>
+
+            <div class="relative flex items-center has-tooltip">
+                <button id="btnClearCanvas" class="glass-btn w-9 h-9 rounded-xl flex items-center justify-center text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30">
+                    <i class="ph ph-trash text-base"></i>
+                </button>
+                <span class="tooltip absolute left-12 whitespace-nowrap bg-slate-900 text-rose-300 text-[11px] px-2.5 py-1 rounded-lg border border-slate-700 shadow-xl" id="i18n-btnClear">Bersihkan Canvas</span>
+            </div>
+        </div>
     </aside>
 
-    <!-- BOTTOM CONTROL BAR -->
-    <footer class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 glass-panel px-5 py-3 rounded-3xl">
-        <button id="btnCapture" class="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs px-5 py-2.5 rounded-2xl shadow-lg shadow-cyan-500/25 active:scale-95 transition-all">
-            <i class="fa-solid fa-camera text-sm"></i>
-            <span id="lblCapture">Ambil Foto</span>
+    <!-- MOBILE TOOL STRIP (Melayang di atas bottom bar khusus layar HP) -->
+    <div class="md:hidden absolute bottom-16 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-sm glass-panel px-2 py-1.5 rounded-2xl flex items-center justify-between gap-1 overflow-x-auto">
+        <button data-tool="select" class="tool-btn glass-btn p-2 rounded-xl text-slate-300 active flex-1 flex justify-center">
+            <i class="ph ph-cursor-text text-lg"></i>
         </button>
-
-        <button id="btnRecord" class="flex items-center gap-2 glass-button text-slate-200 hover:text-rose-400 font-semibold text-xs px-4 py-2.5 rounded-2xl active:scale-95 transition-all">
-            <i class="fa-solid fa-circle text-rose-500 text-xs animate-pulse"></i>
-            <span id="lblRecord">Rekam Video</span>
+        <button data-tool="distance" class="tool-btn glass-btn p-2 rounded-xl text-slate-300 flex-1 flex justify-center">
+            <i class="ph ph-ruler text-lg"></i>
         </button>
-
-        <div class="h-6 w-[1px] bg-slate-700/60 mx-1"></div>
-
-        <button id="btnGallery" class="glass-button p-2.5 rounded-2xl text-slate-300 hover:text-cyan-400 transition-colors flex items-center gap-2 text-xs font-medium px-3.5">
-            <i class="fa-solid fa-images text-sm"></i>
-            <span id="lblGallery">Galeri</span>
+        <button data-tool="angle" class="tool-btn glass-btn p-2 rounded-xl text-slate-300 flex-1 flex justify-center">
+            <i class="ph ph-compass text-lg"></i>
         </button>
-
-        <button id="btnCalibration" class="glass-button p-2.5 rounded-2xl text-slate-300 hover:text-cyan-400 transition-colors flex items-center gap-2 text-xs font-medium px-3.5">
-            <i class="fa-solid fa-sliders text-sm"></i>
-            <span id="lblCalibration">Kalibrasi</span>
+        <button data-tool="rect" class="tool-btn glass-btn p-2 rounded-xl text-slate-300 flex-1 flex justify-center">
+            <i class="ph ph-bounding-box text-lg"></i>
         </button>
-
-        <button id="btnGuide" class="glass-button p-2.5 rounded-2xl text-slate-300 hover:text-cyan-400 transition-colors flex items-center gap-2 text-xs font-medium px-3.5">
-            <i class="fa-solid fa-book-open text-sm"></i>
-            <span id="lblGuide">Panduan</span>
+        <button data-tool="circle" class="tool-btn glass-btn p-2 rounded-xl text-slate-300 flex-1 flex justify-center">
+            <i class="ph ph-circle text-lg"></i>
         </button>
-
-        <button id="btnSettings" class="glass-button p-2.5 rounded-2xl text-slate-300 hover:text-cyan-400 transition-colors flex items-center justify-center w-9 h-9">
-            <i class="fa-solid fa-gear text-sm"></i>
+        <div class="h-5 w-[1px] bg-slate-800 mx-0.5"></div>
+        <button id="btnClearCanvasMobile" class="glass-btn p-2 rounded-xl text-rose-400 flex-1 flex justify-center">
+            <i class="ph ph-trash text-lg"></i>
         </button>
+    </div>
+
+    <!-- 4. FLOATING BOTTOM CONTROL BAR (ADAPTIVE HP & DESKTOP) -->
+    <footer class="relative z-30 pb-3 md:pb-5 pt-1 flex justify-center items-center pointer-events-none">
+        <div class="glass-panel px-3 py-2 md:px-4 md:py-2.5 rounded-2xl flex items-center gap-1.5 md:gap-2 pointer-events-auto max-w-[95vw] overflow-x-auto">
+            <!-- Capture Photo -->
+            <button id="btnCapture" class="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs px-3 py-2 md:px-4 md:py-2 rounded-xl transition-all shadow-md active:scale-95 shrink-0">
+                <i class="ph-bold ph-camera text-sm"></i>
+                <span id="i18n-btnCapture" class="hidden sm:inline">Ambil Foto</span>
+            </button>
+
+            <!-- Record Video -->
+            <button id="btnRecord" class="flex items-center gap-1.5 glass-btn text-slate-200 font-medium text-xs px-3 py-2 md:px-3.5 md:py-2 rounded-xl transition-all active:scale-95 shrink-0">
+                <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                <span id="i18n-btnRecord" class="hidden sm:inline">Rekam</span>
+            </button>
+
+            <div class="h-4 md:h-5 w-[1px] bg-slate-800 mx-0.5 md:mx-1 shrink-0"></div>
+
+            <!-- Gallery -->
+            <button id="btnGallery" class="glass-btn p-2 md:px-3 rounded-xl text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-medium shrink-0">
+                <i class="ph ph-image text-base text-slate-400"></i>
+                <span id="i18n-btnGallery" class="hidden md:inline">Galeri</span>
+            </button>
+
+            <!-- Calibration -->
+            <button id="btnCalibration" class="glass-btn p-2 md:px-3 rounded-xl text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-medium shrink-0">
+                <i class="ph ph-sliders-horizontal text-base text-slate-400"></i>
+                <span id="i18n-btnCalib" class="hidden md:inline">Kalibrasi</span>
+            </button>
+
+            <!-- Guide -->
+            <button id="btnGuide" class="glass-btn p-2 md:px-3 rounded-xl text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-medium shrink-0">
+                <i class="ph ph-book-open text-base text-slate-400"></i>
+                <span id="i18n-btnGuide" class="hidden md:inline">Panduan</span>
+            </button>
+
+            <!-- Settings -->
+            <button id="btnSettings" class="glass-btn p-2 rounded-xl text-slate-300 hover:text-white transition-colors w-8 h-8 flex items-center justify-center shrink-0">
+                <i class="ph ph-gear text-base"></i>
+            </button>
+        </div>
     </footer>
 
-    <!-- MODAL: GALLERY -->
-    <div id="modalGallery" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="glass-panel w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col max-h-[85vh]">
-            <div class="p-5 border-b border-slate-700/50 flex justify-between items-center">
-                <div class="flex items-center gap-2 text-slate-100 font-semibold text-base">
-                    <i class="fa-solid fa-images text-cyan-400"></i>
-                    <span id="lblGalleryTitle">Galeri Tangkapan</span>
+    <!-- MODAL 1: GALLERY -->
+    <div id="modalGallery" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 md:p-4 hidden">
+        <div class="glass-panel w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-800">
+            <div class="p-3.5 md:p-4 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-slate-100 font-medium text-xs md:text-sm">
+                    <i class="ph ph-image text-sky-400 text-base md:text-lg"></i>
+                    <span id="i18n-modalGalleryTitle">Galeri Tangkapan</span>
                 </div>
-                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="ph ph-x"></i></button>
             </div>
-            <div id="galleryContainer" class="p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto min-h-[300px]">
-                <div class="col-span-full text-center py-12 text-slate-500 text-sm" id="lblGalleryEmpty">
-                    Belum ada hasil tangkapan foto/video.
+            <div id="galleryGrid" class="p-4 md:p-5 grid grid-cols-2 md:grid-cols-3 gap-2.5 md:gap-3 overflow-y-auto min-h-[200px]">
+                <div class="col-span-full flex flex-col items-center justify-center py-10 text-slate-500 text-xs">
+                    <i class="ph ph-images text-2xl md:text-3xl mb-2 opacity-40"></i>
+                    <span id="i18n-galleryEmpty">Belum ada media foto/video yang disimpan.</span>
                 </div>
             </div>
-            <div class="p-4 border-t border-slate-700/50 flex justify-end">
-                <button class="modal-close px-5 py-2 glass-button rounded-xl text-xs font-semibold text-slate-300 hover:text-white">Tutup</button>
+            <div class="p-3 border-t border-slate-800 flex justify-end">
+                <button class="modal-close px-4 py-1.5 glass-btn rounded-xl text-xs font-medium text-slate-300">Tutup</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: CALIBRATION -->
-    <div id="modalCalibration" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="glass-panel w-full max-w-md rounded-3xl overflow-hidden">
-            <div class="p-5 border-b border-slate-700/50 flex justify-between items-center">
-                <div class="flex items-center gap-2 text-slate-100 font-semibold text-base">
-                    <i class="fa-solid fa-sliders text-cyan-400"></i>
-                    <span id="lblCalibTitle">Pengaturan Kalibrasi Skala</span>
+    <!-- MODAL 2: CALIBRATION -->
+    <div id="modalCalibration" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 md:p-4 hidden">
+        <div class="glass-panel w-full max-w-sm rounded-2xl overflow-hidden border border-slate-800">
+            <div class="p-3.5 md:p-4 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-slate-100 font-medium text-xs md:text-sm">
+                    <i class="ph ph-sliders-horizontal text-sky-400 text-base md:text-lg"></i>
+                    <span id="i18n-modalCalibTitle">Kalibrasi Skala</span>
                 </div>
-                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="ph ph-x"></i></button>
             </div>
-            <div class="p-6 space-y-4 text-xs">
+            <div class="p-4 md:p-5 space-y-3.5 text-xs">
                 <div>
-                    <label class="block text-slate-300 font-medium mb-1.5" id="lblKnownDistance">Jarak Referensi Riil (mm)</label>
-                    <input type="number" id="inputRealDistance" value="1.0" step="0.1" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500">
+                    <label class="block text-slate-300 font-medium mb-1" id="i18n-lblRealDistance">Panjang Referensi Riil (mm)</label>
+                    <input type="number" id="inputRealDistance" value="1.00" step="0.01" class="w-full bg-slate-900 border border-slate-700/70 rounded-xl px-3 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-sky-500">
                 </div>
                 <div>
-                    <label class="block text-slate-300 font-medium mb-1.5" id="lblCurrentScale">Skala Piksel Terhitung</label>
-                    <div id="txtPixelScale" class="bg-slate-900/50 border border-slate-800 rounded-xl px-3 py-2.5 text-cyan-400 font-mono">1.000 px = 1.000 mm</div>
+                    <label class="block text-slate-300 font-medium mb-1" id="i18n-lblCurrentScale">Konversi Terhitung</label>
+                    <div id="txtPixelScale" class="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2 text-sky-400 font-mono text-xs">1.000 px = 1.000 mm</div>
                 </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed" id="lblCalibHelp">
-                    Petunjuk: Gunakan alat 'Ukur Jarak' untuk membuat garis sampel di atas ruler mikrometer, lalu klik 'Terapkan Skala'.
+                <p class="text-[10px] md:text-[11px] text-slate-400 leading-relaxed bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/80" id="i18n-calibHelp">
+                    Petunjuk: Buat 1 garis ukur jarak di atas mistar mikrometer, lalu klik 'Terapkan Skala'.
                 </p>
             </div>
-            <div class="p-4 border-t border-slate-700/50 flex justify-end gap-2">
-                <button class="modal-close px-4 py-2 glass-button rounded-xl text-xs text-slate-300">Batal</button>
-                <button id="btnSaveCalib" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-xl text-xs font-semibold text-white">Terapkan Skala</button>
+            <div class="p-3 border-t border-slate-800 flex justify-end gap-2">
+                <button class="modal-close px-3.5 py-1.5 glass-btn rounded-xl text-xs text-slate-300">Batal</button>
+                <button id="btnSaveCalib" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-medium text-white">Terapkan Skala</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: GUIDE -->
-    <div id="modalGuide" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="glass-panel w-full max-w-2xl rounded-3xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div class="p-5 border-b border-slate-700/50 flex justify-between items-center">
-                <div class="flex items-center gap-2 text-slate-100 font-semibold text-base">
-                    <i class="fa-solid fa-book-open text-cyan-400"></i>
-                    <span id="lblGuideTitle">Panduan Penggunaan</span>
+    <!-- MODAL 3: PANDUAN (GUIDE WITH ADAPTIVE TABS) -->
+    <div id="modalGuide" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 md:p-4 hidden">
+        <div class="glass-panel w-full max-w-xl rounded-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-800">
+            <div class="p-3.5 md:p-4 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-slate-100 font-medium text-xs md:text-sm">
+                    <i class="ph ph-book-open text-sky-400 text-base md:text-lg"></i>
+                    <span id="i18n-modalGuideTitle">Panduan Penggunaan</span>
                 </div>
-                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="ph ph-x"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto space-y-4 text-xs text-slate-300 leading-relaxed">
-                <section class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                    <h4 class="font-semibold text-cyan-400 text-sm mb-1">1. Menghubungkan Mikroskop</h4>
-                    <p>Hubungkan kabel USB mikroskop ke komputer atau tablet (menggunakan adapter OTG). Pilih kamera yang sesuai pada drop-down menu di bagian kanan atas.</p>
-                </section>
-                <section class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                    <h4 class="font-semibold text-cyan-400 text-sm mb-1">2. Alat Ukur & Kalibrasi</h4>
-                    <p>Gunakan toolbar melayang di sebelah kiri untuk mengukur Jarak, Sudut, Luas Persegi, dan Lingkaran. Kalibrasi dilakukan agar hasil pengukuran dinyatakan dalam milimeter (mm).</p>
-                </section>
+            
+            <!-- Guide Tab Navigation (Scrollable Horizontally on HP) -->
+            <div class="flex border-b border-slate-800 px-3 md:px-4 bg-slate-950/40 text-xs gap-3 md:gap-4 overflow-x-auto" id="guideTabs">
+                <button data-tab="setup" class="guide-tab border-b-2 border-sky-400 py-2.5 text-sky-400 font-medium shrink-0" id="i18n-tabSetup">Pemasangan Alat</button>
+                <button data-tab="usage" class="guide-tab border-b-2 border-transparent py-2.5 text-slate-400 font-medium hover:text-slate-200 shrink-0" id="i18n-tabUsage">Penggunaan Program</button>
+                <button data-tab="trouble" class="guide-tab border-b-2 border-transparent py-2.5 text-slate-400 font-medium hover:text-slate-200 shrink-0" id="i18n-tabTrouble">Troubleshooting</button>
+                <button data-tab="specs" class="guide-tab border-b-2 border-transparent py-2.5 text-slate-400 font-medium hover:text-slate-200 shrink-0" id="i18n-tabSpecs">Spesifikasi</button>
             </div>
-            <div class="p-4 border-t border-slate-700/50 flex justify-end">
-                <button class="modal-close px-5 py-2 glass-button rounded-xl text-xs font-semibold text-slate-300 hover:text-white">Selesai</button>
+
+            <div class="p-4 md:p-5 overflow-y-auto text-xs text-slate-300 leading-relaxed space-y-3" id="guideContent">
+                <div id="tabContentBody">
+                    <!-- Dynamic Text Injection -->
+                </div>
+            </div>
+
+            <div class="p-3 border-t border-slate-800 flex justify-end">
+                <button class="modal-close px-4 py-1.5 glass-btn rounded-xl text-xs font-medium text-slate-300">Tutup</button>
             </div>
         </div>
     </div>
 
+    <!-- MODAL 4: SETTINGS -->
+    <div id="modalSettings" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 md:p-4 hidden">
+        <div class="glass-panel w-full max-w-sm rounded-2xl overflow-hidden border border-slate-800">
+            <div class="p-3.5 md:p-4 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-slate-100 font-medium text-xs md:text-sm">
+                    <i class="ph ph-gear text-sky-400 text-base md:text-lg"></i>
+                    <span id="i18n-modalSettingsTitle">Pengaturan Aplikasi</span>
+                </div>
+                <button class="modal-close text-slate-400 hover:text-white p-1 text-lg"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="p-4 md:p-5 space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1.5" id="i18n-lblSelectCam">Pilih Sumber Kamera</label>
+                    <select id="settingCamSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none">
+                        <!-- Cloned camera options -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1.5" id="i18n-lblOverlayPref">Preferensi Overlay Pengukuran</label>
+                    <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+                        <input type="checkbox" id="chkSaveOverlay" checked class="rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-0">
+                        <span id="i18n-lblSaveOverlayText">Sertakan overlay saat mengambil foto/video</span>
+                    </label>
+                </div>
+            </div>
+            <div class="p-3 border-t border-slate-800 flex justify-end">
+                <button class="modal-close px-4 py-1.5 bg-sky-600 hover:bg-sky-500 rounded-xl text-xs font-medium text-white">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC WITH FULL TOUCH & MOUSE INTERACTIVITY -->
     <script>
-        const i18n = {
+        // Localization Dictionary
+        const i18nData = {
             id: {
-                detecting: "Mendeteksi kamera...",
-                noCamTitle: "Kamera Tidak Ditemukan",
-                noCamDesc: "Hubungkan kamera mikroskop USB atau pilih simulasi sampel untuk pengujian.",
+                optDetecting: "Mendeteksi...",
+                noCamTitle: "Kamera Tidak Terdeteksi",
+                noCamDesc: "Hubungkan perangkat mikroskop USB OTG / UVC Anda, atau aktifkan mode simulasi.",
                 btnDemo: "Gunakan Mode Simulasi",
-                capture: "Ambil Foto",
-                record: "Rekam Video",
-                gallery: "Galeri",
-                calibration: "Kalibrasi",
-                guide: "Panduan",
-                galleryTitle: "Galeri Tangkapan",
-                galleryEmpty: "Belum ada hasil tangkapan foto/video.",
-                calibTitle: "Pengaturan Kalibrasi Skala",
-                knownDist: "Jarak Referensi Riil (mm)",
-                currScale: "Skala Piksel Terhitung",
-                calibHelp: "Petunjuk: Gunakan alat 'Ukur Jarak' untuk membuat garis sampel di atas ruler mikrometer, lalu klik 'Terapkan Skala'.",
-                guideTitle: "Panduan Penggunaan"
+                toolSelect: "Pointer / Move",
+                toolDistance: "Ukur Jarak",
+                toolAngle: "Ukur Sudut",
+                toolRect: "Luas Persegi",
+                toolCircle: "Ukur Lingkaran",
+                btnClear: "Bersihkan Canvas",
+                btnCapture: "Ambil Foto",
+                btnRecord: "Rekam",
+                btnGallery: "Galeri",
+                btnCalib: "Kalibrasi",
+                btnGuide: "Panduan",
+                modalGalleryTitle: "Galeri Tangkapan",
+                galleryEmpty: "Belum ada media foto/video yang disimpan.",
+                modalCalibTitle: "Kalibrasi Skala",
+                lblRealDistance: "Panjang Referensi Riil (mm)",
+                lblCurrentScale: "Konversi Terhitung",
+                calibHelp: "Petunjuk: Buat 1 garis ukur jarak di atas mistar mikrometer, lalu klik 'Terapkan Skala'.",
+                modalGuideTitle: "Panduan Penggunaan",
+                tabSetup: "Pemasangan Alat",
+                tabUsage: "Penggunaan Program",
+                tabTrouble: "Troubleshooting",
+                tabSpecs: "Spesifikasi",
+                modalSettingsTitle: "Pengaturan Aplikasi",
+                lblSelectCam: "Pilih Sumber Kamera",
+                lblOverlayPref: "Preferensi Overlay Pengukuran",
+                lblSaveOverlayText: "Sertakan overlay saat mengambil foto/video"
             },
             en: {
-                detecting: "Detecting cameras...",
-                noCamTitle: "No Camera Found",
-                noCamDesc: "Connect a USB microscope camera or select simulation mode for testing.",
+                optDetecting: "Detecting...",
+                noCamTitle: "Camera Not Detected",
+                noCamDesc: "Connect your USB OTG / UVC microscope camera, or enable simulation mode.",
                 btnDemo: "Use Simulation Mode",
-                capture: "Take Photo",
-                record: "Record Video",
-                gallery: "Gallery",
-                calibration: "Calibration",
-                guide: "Guide",
-                galleryTitle: "Captured Gallery",
-                galleryEmpty: "No captured photos/videos yet.",
-                calibTitle: "Scale Calibration Settings",
-                knownDist: "Real Reference Distance (mm)",
-                currScale: "Calculated Pixel Scale",
-                calibHelp: "Hint: Use the 'Distance' tool to draw a sample line over a micrometer scale, then click 'Apply Scale'.",
-                guideTitle: "User Manual"
+                toolSelect: "Pointer / Move",
+                toolDistance: "Measure Distance",
+                toolAngle: "Measure Angle",
+                toolRect: "Rectangle Area",
+                toolCircle: "Measure Circle",
+                btnClear: "Clear Canvas",
+                btnCapture: "Take Photo",
+                btnRecord: "Record",
+                btnGallery: "Gallery",
+                btnCalib: "Calibration",
+                btnGuide: "User Guide",
+                modalGalleryTitle: "Captured Gallery",
+                galleryEmpty: "No captured media saved yet.",
+                modalCalibTitle: "Scale Calibration",
+                lblRealDistance: "Real Reference Distance (mm)",
+                lblCurrentScale: "Calculated Scale Conversion",
+                calibHelp: "Instruction: Draw 1 distance measurement line over micrometer ruler, then click 'Apply Scale'.",
+                modalGuideTitle: "User Manual",
+                tabSetup: "Hardware Setup",
+                tabUsage: "Software Usage",
+                tabTrouble: "Troubleshooting",
+                tabSpecs: "Specifications",
+                modalSettingsTitle: "Application Settings",
+                lblSelectCam: "Select Camera Source",
+                lblOverlayPref: "Measurement Overlay Preference",
+                lblSaveOverlayText: "Include overlay when taking photo/video"
             }
         };
 
+        const guideTexts = {
+            id: {
+                setup: `<p class="font-semibold text-slate-200 mb-1">1. Pemasangan Mikroskop USB</p>
+                        <p class="text-slate-400 mb-2.5">Tancapkan konektor USB ke PC/Laptop atau adapter Type-C OTG ke Tablet/HP Android. Pastikan indikator LED lampu mikroskop menyala.</p>
+                        <p class="font-semibold text-slate-200 mb-1">2. Deteksi Driver</p>
+                        <p class="text-slate-400">Sistem akan otomatis mendeteksi perangkat sebagai UVC Camera tanpa memerlukan instalasi driver manual tambahan.</p>`,
+                usage: `<p class="font-semibold text-slate-200 mb-1">Fitur Ukur Interaktif</p>
+                        <p class="text-slate-400 mb-2">Gunakan toolbar sebelah kiri (desktop) atau toolbar bawah (mobile) untuk memilih jenis alat ukur: Jarak (2 titik), Sudut (3 titik), Luas Persegi, dan Lingkaran.</p>
+                        <p class="font-semibold text-slate-200 mb-1">Prosedur Kalibrasi</p>
+                        <p class="text-slate-400">Letakkan mistar kalibrasi mikrometer di bawah lensa, tarik garis ukur jarak, buka menu Kalibrasi, lalu masukkan nilai riil (mm).</p>`,
+                trouble: `<p class="font-semibold text-slate-200 mb-1">Layar Hitam / Kamera Tidak Terbaca</p>
+                        <p class="text-slate-400 mb-2">Pastikan izin akses kamera/webcam telah diberikan pada browser atau aplikasi OS Anda.</p>
+                        <p class="font-semibold text-slate-200 mb-1">Gambar Buram</p>
+                        <p class="text-slate-400">Putar kenop fokus fisik pada tabung mikroskop hingga objek terlihat tajam.</p>`,
+                specs: `<p class="text-slate-300"><strong>Versi Software:</strong> 2.4.0 (Flutter Architectural Draft)</p>
+                        <p class="text-slate-300"><strong>Support Kamera:</strong> USB OTG / UVC Standard Camera Feed</p>
+                        <p class="text-slate-300"><strong>Touch Support:</strong> Full Multi-touch / Pointer Events</p>`
+            },
+            en: {
+                setup: `<p class="font-semibold text-slate-200 mb-1">1. USB Microscope Setup</p>
+                        <p class="text-slate-400 mb-2.5">Plug the USB connector into your PC/Laptop or Type-C OTG adapter on Android Tablet/Phone. Ensure microscope LED indicator turns on.</p>
+                        <p class="font-semibold text-slate-200 mb-1">2. Driver Detection</p>
+                        <p class="text-slate-400">The system auto-detects the hardware as a UVC Camera without needing manual driver installation.</p>`,
+                usage: `<p class="font-semibold text-slate-200 mb-1">Interactive Measurement Tools</p>
+                        <p class="text-slate-400 mb-2">Use the toolbar on the left (desktop) or bottom strip (mobile) to choose tools: Distance (2 points), Angle (3 points), Rectangle Area, and Circle.</p>
+                        <p class="font-semibold text-slate-200 mb-1">Calibration Procedure</p>
+                        <p class="text-slate-400">Place a micrometer ruler under the lens, draw a distance line, open Calibration modal, and type the actual real value (mm).</p>`,
+                trouble: `<p class="font-semibold text-slate-200 mb-1">Black Screen / Camera Not Detected</p>
+                        <p class="text-slate-400 mb-2">Ensure camera permission access has been granted in your browser or OS application settings.</p>
+                        <p class="font-semibold text-slate-200 mb-1">Blurry Image</p>
+                        <p class="text-slate-400">Rotate physical focus wheel on the microscope tube until image sample is crisp.</p>`,
+                specs: `<p class="text-slate-300"><strong>Software Version:</strong> 2.4.0 (Flutter Architectural Draft)</p>
+                        <p class="text-slate-300"><strong>Camera Support:</strong> USB OTG / UVC Standard Camera Feed</p>
+                        <p class="text-slate-300"><strong>Touch Support:</strong> Full Multi-touch / Pointer Events</p>`
+            }
+        };
+
+        // App State
         let currentLang = 'id';
-        let activeTool = 'select'; // select, distance, angle, rect, circle
-        let pxPerMm = 1.0; // 1 pixel = 1 mm by default
+        let activeTool = 'select';
+        let pxPerMm = 1.0; 
+        let lastDistancePx = 100;
         let isDrawing = false;
-        let startPoint = null;
         let currentPoints = [];
         let shapes = [];
         let capturedMedia = [];
 
-        // DOM Elements
+        // DOM References
         const canvas = document.getElementById('overlayCanvas');
         const ctx = canvas.getContext('2d');
         const video = document.getElementById('videoFeed');
         const cameraSelect = document.getElementById('cameraSelect');
+        const settingCamSelect = document.getElementById('settingCamSelect');
         const simulatedBg = document.getElementById('simulatedBg');
         const noCamNotice = document.getElementById('noCamNotice');
 
+        // Resize Canvas dynamically
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -337,17 +538,16 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        // Camera Detection
         async function getCameraDevices() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(d => d.kind === 'videoinput');
                 
                 cameraSelect.innerHTML = '';
+                settingCamSelect.innerHTML = '';
+
                 if (videoDevices.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.value = "";
-                    opt.textContent = "Kamera Tidak Tersedia";
-                    cameraSelect.appendChild(opt);
                     showNoCameraNotice(true);
                     return;
                 }
@@ -356,14 +556,17 @@
                 videoDevices.forEach((device, index) => {
                     const opt = document.createElement('option');
                     opt.value = device.deviceId;
-                    opt.textContent = device.label || `Microscope / Camera ${index + 1}`;
-                    opt.className = "bg-slate-900 text-slate-300";
+                    opt.textContent = device.label || `Microscope Cam ${index + 1}`;
+                    opt.className = "bg-slate-900 text-slate-200";
                     cameraSelect.appendChild(opt);
+
+                    const optClone = opt.cloneNode(true);
+                    settingCamSelect.appendChild(optClone);
                 });
 
                 startCameraStream(videoDevices[0].deviceId);
             } catch (err) {
-                console.warn("Media devices access denied or unsupported.", err);
+                console.warn("Camera enumeration error:", err);
                 showNoCameraNotice(true);
             }
         }
@@ -377,9 +580,9 @@
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 window.currentStream = stream;
                 video.srcObject = stream;
-                simulatedBg.style.opacity = '0'; // Hide fallback background when camera works
+                video.classList.remove('hidden');
+                simulatedBg.style.opacity = '0';
             } catch (e) {
-                console.warn("Could not start camera feed:", e);
                 showNoCameraNotice(true);
             }
         }
@@ -387,33 +590,31 @@
         function showNoCameraNotice(show) {
             if (show) {
                 noCamNotice.classList.remove('hidden');
+                video.classList.add('hidden');
                 simulatedBg.style.opacity = '0.9';
-                document.getElementById('statusDot').className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500";
+                document.getElementById('statusDot').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
                 document.getElementById('statusPing').className = "hidden";
             } else {
                 noCamNotice.classList.add('hidden');
-                document.getElementById('statusDot').className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500";
+                document.getElementById('statusDot').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
                 document.getElementById('statusPing').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
             }
         }
 
+        // CustomPainter Drawing Engine
         function redrawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw all saved shapes
             shapes.forEach(shape => drawShape(shape));
-
-            // Draw shape currently being created
             if (isDrawing && currentPoints.length > 0) {
-                drawShape({ type: activeTool, points: currentPoints, inProgress: true });
+                drawShape({ type: activeTool, points: currentPoints });
             }
         }
 
         function drawShape(shape) {
-            ctx.strokeStyle = '#06B6D4';
-            ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
             ctx.lineWidth = 2;
-            ctx.font = '12px Inter, sans-serif';
+            ctx.font = '500 12px Inter, sans-serif';
 
             const pts = shape.points;
             if (shape.type === 'distance' && pts.length >= 2) {
@@ -423,9 +624,10 @@
                 ctx.stroke();
 
                 const distPx = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                lastDistancePx = distPx;
                 const distMm = (distPx / pxPerMm).toFixed(2);
                 
-                ctx.fillStyle = '#38BDF8';
+                ctx.fillStyle = '#f8fafc';
                 ctx.fillText(`${distMm} mm`, (pts[0].x + pts[1].x) / 2 + 8, (pts[0].y + pts[1].y) / 2 - 8);
             } else if (shape.type === 'rect' && pts.length >= 2) {
                 const w = pts[1].x - pts[0].x;
@@ -436,8 +638,8 @@
                 ctx.stroke();
 
                 const areaMm2 = (Math.abs(w * h) / (pxPerMm * pxPerMm)).toFixed(2);
-                ctx.fillStyle = '#38BDF8';
-                ctx.fillText(`Luas: ${areaMm2} mm²`, pts[0].x + 5, pts[0].y + 18);
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillText(`Luas: ${areaMm2} mm²`, pts[0].x + 6, pts[0].y + 16);
             } else if (shape.type === 'circle' && pts.length >= 2) {
                 const r = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 ctx.beginPath();
@@ -446,8 +648,8 @@
                 ctx.stroke();
 
                 const radiusMm = (r / pxPerMm).toFixed(2);
-                ctx.fillStyle = '#38BDF8';
-                ctx.fillText(`r: ${radiusMm} mm`, pts[0].x + r + 5, pts[0].y);
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillText(`r: ${radiusMm} mm`, pts[0].x + r + 6, pts[0].y);
             } else if (shape.type === 'angle' && pts.length >= 3) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
@@ -455,22 +657,37 @@
                 ctx.lineTo(pts[2].x, pts[2].y);
                 ctx.stroke();
 
-                // Angle calculation
                 const a = Math.atan2(pts[0].y - pts[1].y, pts[0].x - pts[1].x);
                 const b = Math.atan2(pts[2].y - pts[1].y, pts[2].x - pts[1].x);
                 let deg = Math.abs((a - b) * 180 / Math.PI);
                 if (deg > 180) deg = 360 - deg;
 
-                ctx.fillStyle = '#38BDF8';
+                ctx.fillStyle = '#f8fafc';
                 ctx.fillText(`${deg.toFixed(1)}°`, pts[1].x + 10, pts[1].y - 10);
             }
         }
 
-        canvas.addEventListener('mousedown', (e) => {
+        // Pointer / Touch Event Normalization
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handleStart(e) {
             if (activeTool === 'select') return;
             isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            const pt = getCanvasCoordinates(e);
 
             if (activeTool === 'angle') {
                 currentPoints.push(pt);
@@ -483,22 +700,19 @@
                 currentPoints = [pt, pt];
             }
             redrawCanvas();
-        });
+        }
 
-        canvas.addEventListener('mousemove', (e) => {
+        function handleMove(e) {
             if (!isDrawing || currentPoints.length === 0) return;
-            const rect = canvas.getBoundingClientRect();
-            const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            const pt = getCanvasCoordinates(e);
 
-            if (activeTool === 'angle') {
-                // Update live position preview
-            } else {
+            if (activeTool !== 'angle') {
                 currentPoints[1] = pt;
             }
             redrawCanvas();
-        });
+        }
 
-        canvas.addEventListener('mouseup', () => {
+        function handleEnd() {
             if (isDrawing && activeTool !== 'angle') {
                 if (currentPoints.length >= 2) {
                     shapes.push({ type: activeTool, points: [...currentPoints] });
@@ -507,20 +721,50 @@
                 isDrawing = false;
                 redrawCanvas();
             }
-        });
+        }
 
+        // Mouse Events
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, { passive: false });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleEnd(); }, { passive: false });
+
+        // Synchronize Desktop & Mobile Tool Buttons
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeTool = btn.dataset.tool;
+                const tool = btn.dataset.tool;
+                document.querySelectorAll(`.tool-btn[data-tool="${tool}"]`).forEach(b => b.classList.add('active'));
+                activeTool = tool;
             });
         });
 
-        document.getElementById('btnClearCanvas').addEventListener('click', () => {
+        const clearCanvasAction = () => {
             shapes = [];
             currentPoints = [];
             redrawCanvas();
+        };
+
+        document.getElementById('btnClearCanvas').addEventListener('click', clearCanvasAction);
+        document.getElementById('btnClearCanvasMobile').addEventListener('click', clearCanvasAction);
+
+        // Collapsible Desktop Sidebar
+        let sidebarCollapsed = false;
+        document.getElementById('btnToggleSidebar').addEventListener('click', () => {
+            sidebarCollapsed = !sidebarCollapsed;
+            const group = document.getElementById('toolButtonsGroup');
+            const caret = document.getElementById('sidebarCaret');
+            if (sidebarCollapsed) {
+                group.classList.add('hidden');
+                caret.style.transform = 'rotate(180deg)';
+            } else {
+                group.classList.remove('hidden');
+                caret.style.transform = 'rotate(0deg)';
+            }
         });
 
         // Language Switcher
@@ -531,55 +775,93 @@
         });
 
         function applyLanguage() {
-            const lang = i18n[currentLang];
-            document.getElementById('lblNoCamTitle').textContent = lang.noCamTitle;
-            document.getElementById('lblNoCamDesc').textContent = lang.noCamDesc;
-            document.getElementById('btnUseDemo').textContent = lang.btnDemo;
-            document.getElementById('lblCapture').textContent = lang.capture;
-            document.getElementById('lblRecord').textContent = lang.record;
-            document.getElementById('lblGallery').textContent = lang.gallery;
-            document.getElementById('lblCalibration').textContent = lang.calibration;
-            document.getElementById('lblGuide').textContent = lang.guide;
-            document.getElementById('lblGalleryTitle').textContent = lang.galleryTitle;
-            document.getElementById('lblGalleryEmpty').textContent = lang.galleryEmpty;
-            document.getElementById('lblCalibTitle').textContent = lang.calibTitle;
-            document.getElementById('lblKnownDistance').textContent = lang.knownDist;
-            document.getElementById('lblCurrentScale').textContent = lang.currScale;
-            document.getElementById('lblCalibHelp').textContent = lang.calibHelp;
-            document.getElementById('lblGuideTitle').textContent = lang.guideTitle;
+            const lang = i18nData[currentLang];
+            for (let key in lang) {
+                const el = document.getElementById(`i18n-${key}`);
+                if (el) el.textContent = lang[key];
+            }
+            updateGuideTab('setup');
         }
 
-        // Modals Management
+        // Guide Modal Tabs
+        document.querySelectorAll('.guide-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.guide-tab').forEach(t => {
+                    t.classList.remove('border-sky-400', 'text-sky-400');
+                    t.classList.add('border-transparent', 'text-slate-400');
+                });
+                tab.classList.add('border-sky-400', 'text-sky-400');
+                tab.classList.remove('border-transparent', 'text-slate-400');
+                updateGuideTab(tab.dataset.tab);
+            });
+        });
+
+        function updateGuideTab(tabKey) {
+            document.getElementById('tabContentBody').innerHTML = guideTexts[currentLang][tabKey];
+        }
+
+        // Scale Calibration Logic
+        document.getElementById('btnSaveCalib').addEventListener('click', () => {
+            const realMm = parseFloat(document.getElementById('inputRealDistance').value) || 1.0;
+            pxPerMm = lastDistancePx / realMm;
+            document.getElementById('txtPixelScale').textContent = `${pxPerMm.toFixed(3)} px = 1.000 mm`;
+            document.getElementById('modalCalibration').classList.add('hidden');
+        });
+
+        // Capture Snapshot Simulation
+        document.getElementById('btnCapture').addEventListener('click', () => {
+            const timestamp = new Date().toLocaleTimeString();
+            capturedMedia.push({ type: 'image', time: timestamp });
+            renderGallery();
+        });
+
+        function renderGallery() {
+            const grid = document.getElementById('galleryGrid');
+            if (capturedMedia.length === 0) return;
+            grid.innerHTML = '';
+            capturedMedia.forEach((m) => {
+                const div = document.createElement('div');
+                div.className = "glass-panel p-2 rounded-xl relative group border border-slate-800";
+                div.innerHTML = `
+                    <div class="w-full h-24 md:h-28 bg-slate-900 rounded-lg flex items-center justify-center text-slate-500 overflow-hidden relative">
+                        <i class="ph ph-image text-2xl md:text-3xl"></i>
+                        <span class="absolute bottom-1 right-1 bg-black/60 text-[8px] md:text-[9px] text-slate-300 px-1.5 py-0.5 rounded">${m.time}</span>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        // Generic Modal Handler
         function setupModal(btnId, modalId) {
             const btn = document.getElementById(btnId);
             const modal = document.getElementById(modalId);
-            btn.addEventListener('click', () => modal.classList.remove('hidden'));
-            modal.querySelectorAll('.modal-close').forEach(c => {
-                c.addEventListener('click', () => modal.classList.add('hidden'));
-            });
+            if (btn && modal) {
+                btn.addEventListener('click', () => modal.classList.remove('hidden'));
+                modal.querySelectorAll('.modal-close').forEach(c => {
+                    c.addEventListener('click', () => modal.classList.add('hidden'));
+                });
+            }
         }
 
         setupModal('btnGallery', 'modalGallery');
         setupModal('btnCalibration', 'modalCalibration');
         setupModal('btnGuide', 'modalGuide');
+        setupModal('btnSettings', 'modalSettings');
 
-        document.getElementById('btnUseDemo').addEventListener('click', () => {
-            showNoCameraNotice(false);
-            simulatedBg.style.opacity = '1';
-        });
-
+        document.getElementById('btnUseDemo').addEventListener('click', () => showNoCameraNotice(false));
         document.getElementById('btnRefreshCam').addEventListener('click', getCameraDevices);
 
         // Fullscreen Toggle
         document.getElementById('btnFullscreen').addEventListener('click', () => {
             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
+                document.documentElement.requestFullscreen().catch(() => {});
             } else {
-                document.exitFullscreen();
+                document.exitFullscreen().catch(() => {});
             }
         });
 
-        // Initialize Application
+        // App Initialization
         window.onload = () => {
             getCameraDevices();
             applyLanguage();
