@@ -794,25 +794,64 @@
             }
         }
 
+        // Pill badge helper for high-contrast annotations
+        function drawBadge(text, x, y) {
+            ctx.save();
+            ctx.font = '600 12px Inter, sans-serif';
+            const metrics = ctx.measureText(text);
+            const padX = 8;
+            const padY = 4;
+            const bw = metrics.width + padX * 2;
+            const bh = 22;
+            const bx = x - bw / 2;
+            const by = y - bh / 2;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(bx, by, bw, bh, 6);
+            } else {
+                ctx.rect(bx, by, bw, bh);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+            ctx.restore();
+        }
+
         function drawShape(shape) {
             ctx.strokeStyle = '#38bdf8';
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
             ctx.lineWidth = 2;
             ctx.font = '500 12px Inter, sans-serif';
 
             const pts = shape.points;
+            if (!pts || pts.length === 0) return;
+
             if (shape.type === 'distance' && pts.length >= 2) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
                 ctx.lineTo(pts[1].x, pts[1].y);
                 ctx.stroke();
 
+                // Endpoint handles
+                [pts[0], pts[1]].forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fill();
+                });
+
                 const distPx = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 lastDistancePx = distPx;
                 const distMm = (distPx / pxPerMm).toFixed(2);
-                
-                ctx.fillStyle = '#f8fafc';
-                ctx.fillText(`${distMm} mm`, (pts[0].x + pts[1].x) / 2 + 8, (pts[0].y + pts[1].y) / 2 - 8);
+                drawBadge(`${distMm} mm`, (pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2 - 14);
             } else if (shape.type === 'rect' && pts.length >= 2) {
                 const w = pts[1].x - pts[0].x;
                 const h = pts[1].y - pts[0].y;
@@ -822,8 +861,7 @@
                 ctx.stroke();
 
                 const areaMm2 = (Math.abs(w * h) / (pxPerMm * pxPerMm)).toFixed(2);
-                ctx.fillStyle = '#f8fafc';
-                ctx.fillText(`Luas: ${areaMm2} mm²`, pts[0].x + 6, pts[0].y + 16);
+                drawBadge(`Luas: ${areaMm2} mm²`, pts[0].x + w / 2, pts[0].y + h / 2);
             } else if (shape.type === 'circle' && pts.length >= 2) {
                 const r = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 ctx.beginPath();
@@ -832,22 +870,166 @@
                 ctx.stroke();
 
                 const radiusMm = (r / pxPerMm).toFixed(2);
-                ctx.fillStyle = '#f8fafc';
-                ctx.fillText(`r: ${radiusMm} mm`, pts[0].x + r + 6, pts[0].y);
-            } else if (shape.type === 'angle' && pts.length >= 3) {
+                drawBadge(`r: ${radiusMm} mm`, pts[0].x, pts[0].y - r - 12);
+            } else if (shape.type === 'angle') {
+                drawAngleShape(pts);
+            }
+        }
+
+        // Professional Microscope Angle Visualizer (Supports 1-point guide, 2-point line angle, & 3-point vertex angle)
+        function drawAngleShape(pts) {
+            if (pts.length === 1) {
+                // Starting Anchor Dot
+                ctx.save();
                 ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                ctx.lineTo(pts[1].x, pts[1].y);
-                ctx.lineTo(pts[2].x, pts[2].y);
+                ctx.arc(pts[0].x, pts[0].y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(pts[0].x, pts[0].y, 9, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+            } else if (pts.length === 2) {
+                // 2-POINT ANGLE (Line inclination relative to horizontal reference axis)
+                const p0 = pts[0];
+                const p1 = pts[1];
+                const len = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+                if (len < 1) return;
+
+                // 1. Main Line
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.lineTo(p1.x, p1.y);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
                 ctx.stroke();
 
-                const a = Math.atan2(pts[0].y - pts[1].y, pts[0].x - pts[1].x);
-                const b = Math.atan2(pts[2].y - pts[1].y, pts[2].x - pts[1].x);
-                let deg = Math.abs((a - b) * 180 / Math.PI);
-                if (deg > 180) deg = 360 - deg;
+                // 2. Horizontal Baseline (dashed reference)
+                const baseDir = p1.x >= p0.x ? 1 : -1;
+                const baseLen = Math.max(35, Math.min(len * 0.8, 110));
+                ctx.beginPath();
+                ctx.setLineDash([4, 4]);
+                ctx.moveTo(p0.x, p0.y);
+                ctx.lineTo(p0.x + baseDir * baseLen, p0.y);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.65)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.setLineDash([]);
 
-                ctx.fillStyle = '#f8fafc';
-                ctx.fillText(`${deg.toFixed(1)}°`, pts[1].x + 10, pts[1].y - 10);
+                // 3. Angle Calculations
+                const lineAngle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+                const baseAngle = baseDir === 1 ? 0 : Math.PI;
+                let diff = (lineAngle - baseAngle) % (Math.PI * 2);
+                if (diff < -Math.PI) diff += Math.PI * 2;
+                if (diff > Math.PI) diff -= Math.PI * 2;
+                const deg = Math.abs(diff * 180 / Math.PI);
+
+                // 4. Arc and Sector Fill
+                const arcRadius = Math.max(20, Math.min(len * 0.45, 55));
+                const startAngle = baseAngle;
+                const endAngle = baseAngle + diff;
+                const ccw = diff < 0;
+
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.arc(p0.x, p0.y, arcRadius, startAngle, endAngle, ccw);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(p0.x, p0.y, arcRadius, startAngle, endAngle, ccw);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 5. Handles & Degree Badge
+                [p0, p1].forEach((p, idx) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, idx === 0 ? 4.5 : 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = idx === 0 ? '#38bdf8' : '#f8fafc';
+                    ctx.fill();
+                });
+
+                const midAngle = startAngle + diff / 2;
+                const badgeDist = arcRadius + 22;
+                const bx = p0.x + Math.cos(midAngle) * badgeDist;
+                const by = p0.y + Math.sin(midAngle) * badgeDist;
+                drawBadge(`${deg.toFixed(1)}°`, bx, by);
+                ctx.restore();
+            } else if (pts.length >= 3) {
+                // 3-POINT VERTEX ANGLE (Vertex at pts[1], rays to pts[0] and pts[2])
+                const p0 = pts[0];
+                const v = pts[1]; // Vertex
+                const p2 = pts[2];
+
+                const len1 = Math.hypot(p0.x - v.x, p0.y - v.y);
+                const len2 = Math.hypot(p2.x - v.x, p2.y - v.y);
+
+                ctx.save();
+                // 1. Two Arms / Rays
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.lineTo(v.x, v.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 2. Angle Calculations
+                const a0 = Math.atan2(p0.y - v.y, p0.x - v.x);
+                const a2 = Math.atan2(p2.y - v.y, p2.x - v.x);
+                let diff = (a2 - a0) % (Math.PI * 2);
+                if (diff < -Math.PI) diff += Math.PI * 2;
+                if (diff > Math.PI) diff -= Math.PI * 2;
+                const deg = Math.abs(diff * 180 / Math.PI);
+
+                // 3. Dynamic Arc & Sector Fill
+                const maxR = Math.min(len1, len2) * 0.45;
+                const arcRadius = Math.max(18, Math.min(maxR || 35, 55));
+                const ccw = diff < 0;
+
+                ctx.beginPath();
+                ctx.moveTo(v.x, v.y);
+                ctx.arc(v.x, v.y, arcRadius, a0, a0 + diff, ccw);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(v.x, v.y, arcRadius, a0, a0 + diff, ccw);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 4. Vertex Glow Marker & Endpoint Handles
+                ctx.beginPath();
+                ctx.arc(v.x, v.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(v.x, v.y, 9, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                [p0, p2].forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.fill();
+                });
+
+                // 5. Degree Badge positioned at angle bisector
+                const midAngle = a0 + diff / 2;
+                const badgeDist = arcRadius + 22;
+                const bx = v.x + Math.cos(midAngle) * badgeDist;
+                const by = v.y + Math.sin(midAngle) * badgeDist;
+                drawBadge(`${deg.toFixed(1)}°`, bx, by);
+                ctx.restore();
             }
         }
 
@@ -868,19 +1050,31 @@
             };
         }
 
+        let angleDragStart = null;
+
         function handleStart(e) {
             if (activeTool === 'select') return;
-            isDrawing = true;
             const pt = getCanvasCoordinates(e);
 
             if (activeTool === 'angle') {
-                currentPoints.push(pt);
-                if (currentPoints.length === 3) {
-                    shapes.push({ type: 'angle', points: [...currentPoints] });
+                if (currentPoints.length === 0) {
+                    // Click 1: First anchor point
+                    currentPoints = [pt, pt];
+                    isDrawing = true;
+                    angleDragStart = pt;
+                } else if (currentPoints.length === 2) {
+                    // Click 2: Second point confirmed, live 3rd point tracking starts
+                    currentPoints = [currentPoints[0], pt, pt];
+                    angleDragStart = pt;
+                } else if (currentPoints.length >= 3) {
+                    // Click 3: Third point confirmed, finalize 3-point angle
+                    shapes.push({ type: 'angle', points: [currentPoints[0], currentPoints[1], pt] });
                     currentPoints = [];
                     isDrawing = false;
+                    angleDragStart = null;
                 }
             } else {
+                isDrawing = true;
                 currentPoints = [pt, pt];
             }
             redrawCanvas();
@@ -890,14 +1084,36 @@
             if (!isDrawing || currentPoints.length === 0) return;
             const pt = getCanvasCoordinates(e);
 
-            if (activeTool !== 'angle') {
+            if (activeTool === 'angle') {
+                if (currentPoints.length === 2) {
+                    currentPoints[1] = pt;
+                } else if (currentPoints.length >= 3) {
+                    currentPoints[2] = pt;
+                }
+            } else {
                 currentPoints[1] = pt;
             }
             redrawCanvas();
         }
 
-        function handleEnd() {
-            if (isDrawing && activeTool !== 'angle') {
+        function handleEnd(e) {
+            if (!isDrawing) return;
+            const pt = getCanvasCoordinates(e);
+
+            if (activeTool === 'angle') {
+                // Drag-to-draw: If user dragged significantly on point 1, finalize 2-point angle immediately
+                if (angleDragStart && currentPoints.length === 2) {
+                    const dragDist = Math.hypot(pt.x - angleDragStart.x, pt.y - angleDragStart.y);
+                    if (dragDist > 15) {
+                        shapes.push({ type: 'angle', points: [currentPoints[0], pt] });
+                        currentPoints = [];
+                        isDrawing = false;
+                        angleDragStart = null;
+                        redrawCanvas();
+                        return;
+                    }
+                }
+            } else {
                 if (currentPoints.length >= 2) {
                     shapes.push({ type: activeTool, points: [...currentPoints] });
                 }
@@ -911,25 +1127,45 @@
         canvas.addEventListener('mousedown', handleStart);
         canvas.addEventListener('mousemove', handleMove);
         canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('dblclick', () => {
+            if (activeTool === 'angle' && currentPoints.length >= 2) {
+                shapes.push({ type: 'angle', points: [currentPoints[0], currentPoints[1]] });
+                currentPoints = [];
+                isDrawing = false;
+                angleDragStart = null;
+                redrawCanvas();
+            }
+        });
 
         // Touch Events
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); }, { passive: false });
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, { passive: false });
-        canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleEnd(); }, { passive: false });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); handleEnd(e); }, { passive: false });
 
         // Synchronize Desktop & Mobile Tool Buttons
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                // If angle was being drawn with 2 points, finalize it on tool change
+                if (activeTool === 'angle' && currentPoints.length >= 2) {
+                    shapes.push({ type: 'angle', points: [currentPoints[0], currentPoints[1]] });
+                }
+                currentPoints = [];
+                isDrawing = false;
+                angleDragStart = null;
+
                 document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                 const tool = btn.dataset.tool;
                 document.querySelectorAll(`.tool-btn[data-tool="${tool}"]`).forEach(b => b.classList.add('active'));
                 activeTool = tool;
+                redrawCanvas();
             });
         });
 
         const clearCanvasAction = () => {
             shapes = [];
             currentPoints = [];
+            isDrawing = false;
+            angleDragStart = null;
             redrawCanvas();
         };
 
