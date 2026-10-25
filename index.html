@@ -146,10 +146,13 @@
                     <span id="statusPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span id="statusDot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <!-- Camera Select (Hidden on very small screens, viewable in settings) -->
-                <select id="cameraSelect" class="bg-transparent text-slate-200 font-medium text-xs focus:outline-none cursor-pointer max-w-[100px] md:max-w-[150px] truncate hidden sm:block">
+                <!-- Camera Select (Visible on mobile & desktop) -->
+                <select id="cameraSelect" class="bg-transparent text-slate-200 font-medium text-xs focus:outline-none cursor-pointer max-w-[85px] xs:max-w-[110px] sm:max-w-[140px] md:max-w-[190px] truncate">
                     <option value="" class="bg-slate-900 text-slate-300" id="i18n-optDetecting">Mendeteksi...</option>
                 </select>
+                <button id="btnSwitchCam" class="text-slate-400 hover:text-sky-400 transition-colors p-0.5" title="Ganti Kamera">
+                    <i class="ph ph-camera-rotate text-xs md:text-sm"></i>
+                </button>
                 <button id="btnRefreshCam" class="text-slate-400 hover:text-sky-400 transition-colors p-0.5" title="Refresh Kamera">
                     <i class="ph ph-arrows-clockwise text-xs md:text-sm"></i>
                 </button>
@@ -409,6 +412,9 @@
         const i18nData = {
             id: {
                 optDetecting: "Mendeteksi...",
+                optNoCam: "Tidak ada kamera",
+                titleSwitchCam: "Ganti Kamera",
+                titleRefreshCam: "Segarkan Kamera",
                 noCamTitle: "Kamera Tidak Terdeteksi",
                 noCamDesc: "Hubungkan perangkat mikroskop USB OTG / UVC Anda, atau aktifkan mode simulasi.",
                 btnDemo: "Gunakan Mode Simulasi",
@@ -441,6 +447,9 @@
             },
             en: {
                 optDetecting: "Detecting...",
+                optNoCam: "No camera found",
+                titleSwitchCam: "Switch Camera",
+                titleRefreshCam: "Refresh Camera",
                 noCamTitle: "Camera Not Detected",
                 noCamDesc: "Connect your USB OTG / UVC microscope camera, or enable simulation mode.",
                 btnDemo: "Use Simulation Mode",
@@ -538,51 +547,226 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Camera Detection
-        async function getCameraDevices() {
+        // Camera State
+        let currentDeviceId = null;
+        let availableVideoDevices = [];
+        let isSwitchingCamera = false;
+
+        function updateCameraOptions(devices, activeId) {
+            cameraSelect.innerHTML = '';
+            settingCamSelect.innerHTML = '';
+
+            if (!devices || devices.length === 0) {
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = "";
+                emptyOpt.textContent = (i18nData[currentLang] && i18nData[currentLang].optNoCam) || "Tidak ada kamera";
+                emptyOpt.className = "bg-slate-900 text-slate-400";
+                cameraSelect.appendChild(emptyOpt);
+                settingCamSelect.appendChild(emptyOpt.cloneNode(true));
+                return;
+            }
+
+            devices.forEach((device, index) => {
+                const devId = device.deviceId || `device_${index}`;
+                const opt = document.createElement('option');
+                opt.value = devId;
+                opt.textContent = device.label || (currentLang === 'en' ? `Microscope Cam ${index + 1}` : `Kamera Mikroskop ${index + 1}`);
+                opt.className = "bg-slate-900 text-slate-200";
+                if (devId === activeId) {
+                    opt.selected = true;
+                }
+                cameraSelect.appendChild(opt);
+
+                const optClone = opt.cloneNode(true);
+                if (devId === activeId) {
+                    optClone.selected = true;
+                }
+                settingCamSelect.appendChild(optClone);
+            });
+
+            if (activeId) {
+                cameraSelect.value = activeId;
+                settingCamSelect.value = activeId;
+            }
+        }
+
+        async function refreshDeviceList() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                return [];
+            }
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                
-                cameraSelect.innerHTML = '';
-                settingCamSelect.innerHTML = '';
-
-                if (videoDevices.length === 0) {
-                    showNoCameraNotice(true);
-                    return;
-                }
-
-                showNoCameraNotice(false);
-                videoDevices.forEach((device, index) => {
-                    const opt = document.createElement('option');
-                    opt.value = device.deviceId;
-                    opt.textContent = device.label || `Microscope Cam ${index + 1}`;
-                    opt.className = "bg-slate-900 text-slate-200";
-                    cameraSelect.appendChild(opt);
-
-                    const optClone = opt.cloneNode(true);
-                    settingCamSelect.appendChild(optClone);
-                });
-
-                startCameraStream(videoDevices[0].deviceId);
+                availableVideoDevices = devices.filter(d => d.kind === 'videoinput');
+                updateCameraOptions(availableVideoDevices, currentDeviceId);
+                return availableVideoDevices;
             } catch (err) {
-                console.warn("Camera enumeration error:", err);
-                showNoCameraNotice(true);
+                console.warn("enumerateDevices error:", err);
+                return [];
             }
         }
 
         async function startCameraStream(deviceId) {
-            try {
-                if (window.currentStream) {
+            if (window.currentStream) {
+                try {
                     window.currentStream.getTracks().forEach(track => track.stop());
+                } catch (e) {
+                    console.warn("Error stopping previous track:", e);
                 }
-                const constraints = deviceId ? { video: { deviceId: { exact: deviceId } } } : { video: true };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                window.currentStream = stream;
-                video.srcObject = stream;
-                video.classList.remove('hidden');
-                simulatedBg.style.opacity = '0';
-            } catch (e) {
+                window.currentStream = null;
+            }
+
+            let stream = null;
+
+            const hasValidId = deviceId && typeof deviceId === 'string' && deviceId.trim() !== '' && !deviceId.startsWith('device_');
+            if (hasValidId) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: deviceId },
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    });
+                } catch (eExact) {
+                    console.warn("Exact camera constraint failed, retrying ideal:", eExact);
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                deviceId: { ideal: deviceId }
+                            }
+                        });
+                    } catch (eIdeal) {
+                        console.warn("Ideal camera constraint failed:", eIdeal);
+                    }
+                }
+            }
+
+            if (!stream) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    });
+                } catch (eGeneric) {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    } catch (eTrue) {
+                        console.error("All getUserMedia attempts failed:", eTrue);
+                        showNoCameraNotice(true);
+                        return null;
+                    }
+                }
+            }
+
+            window.currentStream = stream;
+            video.srcObject = stream;
+            video.classList.remove('hidden');
+            simulatedBg.style.opacity = '0';
+            showNoCameraNotice(false);
+
+            try {
+                await video.play();
+            } catch (playErr) {
+                console.warn("video.play() warning:", playErr);
+            }
+
+            const activeTrack = stream.getVideoTracks()[0];
+            let resolvedDeviceId = deviceId;
+            if (activeTrack) {
+                if (activeTrack.getSettings) {
+                    const settings = activeTrack.getSettings();
+                    if (settings && settings.deviceId) {
+                        resolvedDeviceId = settings.deviceId;
+                    }
+                }
+                activeTrack.onended = () => {
+                    console.log("Current camera disconnected (track ended)");
+                    handleDeviceChange();
+                };
+            }
+
+            currentDeviceId = resolvedDeviceId || currentDeviceId;
+            if (currentDeviceId) {
+                cameraSelect.value = currentDeviceId;
+                settingCamSelect.value = currentDeviceId;
+            }
+
+            return stream;
+        }
+
+        async function switchCamera(deviceId) {
+            if (!deviceId || isSwitchingCamera) return;
+            isSwitchingCamera = true;
+            try {
+                const targetId = (deviceId && !deviceId.startsWith('device_')) ? deviceId : undefined;
+                await startCameraStream(targetId);
+                await refreshDeviceList();
+            } catch (err) {
+                console.error("switchCamera error:", err);
+            } finally {
+                isSwitchingCamera = false;
+            }
+        }
+
+        async function cycleNextCamera() {
+            if (availableVideoDevices.length <= 1) return;
+            const currentIndex = availableVideoDevices.findIndex(d => d.deviceId === currentDeviceId);
+            const nextIndex = (currentIndex + 1) % availableVideoDevices.length;
+            const nextDevice = availableVideoDevices[nextIndex];
+            if (nextDevice && nextDevice.deviceId) {
+                cameraSelect.value = nextDevice.deviceId;
+                settingCamSelect.value = nextDevice.deviceId;
+                await switchCamera(nextDevice.deviceId);
+            }
+        }
+
+        async function handleDeviceChange() {
+            console.log("Device change detected (USB plug/unplug event)");
+            const prevDevices = [...availableVideoDevices];
+            const prevActiveId = currentDeviceId;
+
+            const newDevices = await refreshDeviceList();
+
+            if (newDevices.length === 0) {
+                if (window.currentStream) {
+                    window.currentStream.getTracks().forEach(t => t.stop());
+                    window.currentStream = null;
+                }
+                currentDeviceId = null;
+                showNoCameraNotice(true);
+                return;
+            }
+
+            const prevIds = new Set(prevDevices.map(d => d.deviceId));
+            const newlyPlugged = newDevices.find(d => d.deviceId && !prevIds.has(d.deviceId));
+            const activeStillExists = newDevices.some(d => d.deviceId === prevActiveId);
+
+            if (newlyPlugged) {
+                console.log("Switching to newly connected camera:", newlyPlugged.label || newlyPlugged.deviceId);
+                await switchCamera(newlyPlugged.deviceId);
+            } else if (!activeStillExists) {
+                console.log("Active camera disconnected, switching to first available device");
+                await switchCamera(newDevices[0].deviceId);
+            }
+        }
+
+        async function initCamera() {
+            try {
+                await refreshDeviceList();
+                const preferredId = availableVideoDevices.length > 0 && availableVideoDevices[0].deviceId
+                    ? availableVideoDevices[0].deviceId
+                    : undefined;
+                await startCameraStream(preferredId);
+                await refreshDeviceList();
+                if (!currentDeviceId && availableVideoDevices.length > 0) {
+                    currentDeviceId = availableVideoDevices[0].deviceId;
+                    cameraSelect.value = currentDeviceId;
+                    settingCamSelect.value = currentDeviceId;
+                }
+            } catch (err) {
+                console.warn("initCamera failed:", err);
                 showNoCameraNotice(true);
             }
         }
@@ -780,6 +964,10 @@
                 const el = document.getElementById(`i18n-${key}`);
                 if (el) el.textContent = lang[key];
             }
+            const btnSwitch = document.getElementById('btnSwitchCam');
+            if (btnSwitch && lang.titleSwitchCam) btnSwitch.title = lang.titleSwitchCam;
+            const btnRefresh = document.getElementById('btnRefreshCam');
+            if (btnRefresh && lang.titleRefreshCam) btnRefresh.title = lang.titleRefreshCam;
             updateGuideTab('setup');
         }
 
@@ -849,8 +1037,52 @@
         setupModal('btnGuide', 'modalGuide');
         setupModal('btnSettings', 'modalSettings');
 
+        // Camera Switching and Refresh Event Listeners
+        cameraSelect.addEventListener('change', async (e) => {
+            const selectedId = e.target.value;
+            if (!selectedId || selectedId === currentDeviceId) return;
+            settingCamSelect.value = selectedId;
+            await switchCamera(selectedId);
+        });
+
+        settingCamSelect.addEventListener('change', async (e) => {
+            const selectedId = e.target.value;
+            if (!selectedId || selectedId === currentDeviceId) return;
+            cameraSelect.value = selectedId;
+            await switchCamera(selectedId);
+        });
+
+        const btnSwitchCam = document.getElementById('btnSwitchCam');
+        if (btnSwitchCam) {
+            btnSwitchCam.addEventListener('click', cycleNextCamera);
+        }
+
+        document.getElementById('btnRefreshCam').addEventListener('click', async () => {
+            const btn = document.getElementById('btnRefreshCam');
+            const icon = btn.querySelector('i');
+            if (icon) icon.classList.add('animate-spin');
+            try {
+                await refreshDeviceList();
+                if (!window.currentStream || !currentDeviceId) {
+                    if (availableVideoDevices.length > 0) {
+                        await switchCamera(availableVideoDevices[0].deviceId);
+                    } else {
+                        await startCameraStream();
+                    }
+                }
+            } finally {
+                setTimeout(() => {
+                    if (icon) icon.classList.remove('animate-spin');
+                }, 500);
+            }
+        });
+
+        // Listen for hardware USB plug/unplug events
+        if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+            navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+        }
+
         document.getElementById('btnUseDemo').addEventListener('click', () => showNoCameraNotice(false));
-        document.getElementById('btnRefreshCam').addEventListener('click', getCameraDevices);
 
         // Fullscreen Toggle
         document.getElementById('btnFullscreen').addEventListener('click', () => {
@@ -863,7 +1095,7 @@
 
         // App Initialization
         window.onload = () => {
-            getCameraDevices();
+            initCamera();
             applyLanguage();
         };
     </script>
